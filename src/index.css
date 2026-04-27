@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-only {
+    display: block !important;
+  }
+
+  body {
+    background-color: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  @page {
+    margin: 0;
+    size: auto;
+  }
+
+  /* We apply padding to the invoice container itself to compensate for 0 margin @page */
+  .invoice-shadow {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 2cm !important;
+    box-shadow: none !important;
+  }
+
+  /* Ensure colors and images print correctly */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+.invoice-shadow {
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+}
