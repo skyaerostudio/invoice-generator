@@ -8,9 +8,23 @@ const App = () => {
   const [qris, setQris] = useState(null);
   const [tanggal, setTanggal] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [jatuhTempo, setJatuhTempo] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [recipients, setRecipients] = useState([
+    { id: 1, name: 'Rania Bianda Gunawan - Danus', email: 'rania.biandag@gmail.com' }
+  ]);
   const [items, setItems] = useState([
     { id: 1, name: '', quantity: 1, cost: 0 }
   ]);
+  const [paymentInstructions, setPaymentInstructions] = useState(`Pembayaran bisa melalui :
+BRI 058001038511504
+a.n AIDHA MUKHLISHAH IBRAHIM
+atau melalui QRIS DC XVII`);
+  const [closingNotes, setClosingNotes] = useState(`Terima kasih telah membeli alat di Danus DC XVII
+Pembayaran dapat dilakukan melalui transfer bank berikut.
+BRI 058001035894505
+a.n ATSILAH MATTA IBRAHIM
+atau melalui WRIS DC XVII.
+Apabila sudah membayar, harap untuk konfirmasi ke
+Zahra Salsabila (2022)`);
 
   const subtotal = items.reduce((acc, item) => acc + (item.quantity * item.cost), 0);
 
@@ -48,6 +62,25 @@ const App = () => {
         return { ...item, [field]: value };
       }
       return item;
+    }));
+  };
+
+  const addRecipient = () => {
+    setRecipients([...recipients, { id: Date.now(), name: '', email: '' }]);
+  };
+
+  const removeRecipient = (id) => {
+    if (recipients.length > 1) {
+      setRecipients(recipients.filter(r => r.id !== id));
+    }
+  };
+
+  const updateRecipient = (id, field, value) => {
+    setRecipients(recipients.map(r => {
+      if (r.id === id) {
+        return { ...r, [field]: value };
+      }
+      return r;
     }));
   };
 
@@ -96,27 +129,51 @@ const App = () => {
           </div>
         </section>
 
-        {/* QRIS Upload */}
+        {/* Recipients Section */}
         <section className="mb-8">
-          <label className="block text-sm font-medium text-slate-700 mb-2">QRIS Image</label>
-          <div className="relative border-2 border-dashed border-slate-200 rounded-xl p-4 hover:border-blue-400 transition-colors">
-            {qris ? (
-              <div className="relative w-full h-32 flex items-center justify-center">
-                <img src={qris} alt="QRIS Preview" className="max-h-full max-w-full object-contain" />
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-slate-800">Ditagih Kepada</h2>
+            <button 
+              onClick={addRecipient}
+              className="text-blue-600 hover:text-blue-700 flex items-center gap-1 text-sm font-medium"
+            >
+              <Plus size={16} />
+              Add Recipient
+            </button>
+          </div>
+          <div className="space-y-4">
+            {recipients.map((recipient) => (
+              <div key={recipient.id} className="p-4 border border-slate-100 rounded-xl bg-slate-50 relative group">
                 <button 
-                  onClick={() => setQris(null)}
-                  className="absolute -top-2 -right-2 p-1 bg-red-100 text-red-600 rounded-full hover:bg-red-200"
+                  onClick={() => removeRecipient(recipient.id)}
+                  className="absolute top-2 right-2 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
-                  <X size={16} />
+                  <Trash2 size={16} />
                 </button>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-500 mb-1">Nama</label>
+                    <input 
+                      type="text" 
+                      placeholder="Nama penerima..."
+                      value={recipient.name}
+                      onChange={(e) => updateRecipient(recipient.id, 'name', e.target.value)}
+                      className="w-full bg-transparent border-b border-slate-200 focus:border-blue-500 outline-none py-1 text-sm transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-500 mb-1">Email</label>
+                    <input 
+                      type="email" 
+                      placeholder="Email penerima..."
+                      value={recipient.email}
+                      onChange={(e) => updateRecipient(recipient.id, 'email', e.target.value)}
+                      className="w-full bg-transparent border-b border-slate-200 focus:border-blue-500 outline-none py-1 text-sm transition-colors"
+                    />
+                  </div>
+                </div>
               </div>
-            ) : (
-              <div className="flex flex-col items-center py-4">
-                <Upload className="text-slate-400 mb-2" size={24} />
-                <p className="text-xs text-slate-500">Click to upload QRIS</p>
-                <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleQrisUpload} accept="image/*" />
-              </div>
-            )}
+            ))}
           </div>
         </section>
 
@@ -198,6 +255,54 @@ const App = () => {
             ))}
           </div>
         </section>
+
+        {/* Notes Sections */}
+        <section className="mb-8 space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Instruksi Pembayaran</label>
+            <textarea 
+              rows={4}
+              value={paymentInstructions}
+              onChange={(e) => setPaymentInstructions(e.target.value)}
+              className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
+              placeholder="Masukkan instruksi pembayaran..."
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Catatan Penutup</label>
+            <textarea 
+              rows={8}
+              value={closingNotes}
+              onChange={(e) => setClosingNotes(e.target.value)}
+              className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
+              placeholder="Masukkan catatan penutup..."
+            />
+          </div>
+        </section>
+
+        {/* QRIS Upload */}
+        <section className="mb-8">
+          <label className="block text-sm font-medium text-slate-700 mb-2">QRIS Image</label>
+          <div className="relative border-2 border-dashed border-slate-200 rounded-xl p-4 hover:border-blue-400 transition-colors">
+            {qris ? (
+              <div className="relative w-full h-32 flex items-center justify-center">
+                <img src={qris} alt="QRIS Preview" className="max-h-full max-w-full object-contain" />
+                <button 
+                  onClick={() => setQris(null)}
+                  className="absolute -top-2 -right-2 p-1 bg-red-100 text-red-600 rounded-full hover:bg-red-200"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center py-4">
+                <Upload className="text-slate-400 mb-2" size={24} />
+                <p className="text-xs text-slate-500">Click to upload QRIS</p>
+                <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleQrisUpload} accept="image/*" />
+              </div>
+            )}
+          </div>
+        </section>
       </div>
 
       {/* Preview Panel */}
@@ -207,8 +312,11 @@ const App = () => {
           qris={qris}
           tanggal={tanggal}
           jatuhTempo={jatuhTempo}
+          recipients={recipients}
           items={items}
           subtotal={subtotal}
+          paymentInstructions={paymentInstructions}
+          closingNotes={closingNotes}
         />
       </div>
     </div>

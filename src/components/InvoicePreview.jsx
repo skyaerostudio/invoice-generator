@@ -1,7 +1,17 @@
 import { format, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
 
-const InvoicePreview = ({ logo, qris, tanggal, jatuhTempo, items, subtotal }) => {
+const InvoicePreview = ({ 
+  logo, 
+  qris, 
+  tanggal, 
+  jatuhTempo, 
+  recipients, 
+  items, 
+  subtotal,
+  paymentInstructions,
+  closingNotes
+}) => {
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -33,17 +43,21 @@ const InvoicePreview = ({ logo, qris, tanggal, jatuhTempo, items, subtotal }) =>
         </div>
         <div className="text-right">
           <h1 className="text-3xl font-normal text-slate-800 mb-2">Faktur</h1>
-          <p className="font-bold text-slate-800">Dentistry Charity XVI</p>
+          <p className="font-bold text-slate-800">Dentistry Charity XVII</p>
           <p className="text-slate-600">dentistrycharityvxi@gmail.com</p>
         </div>
       </div>
 
       {/* Info Section */}
       <div className="grid grid-cols-2 gap-8 mb-12 bg-slate-50 p-8 rounded-lg">
-        <div>
+        <div className="space-y-4">
           <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">DITAGIH KEPADA</h2>
-          <p className="font-bold text-slate-800">Rania Bianda Gunawan - Danus</p>
-          <p className="text-slate-600">rania.biandag@gmail.com</p>
+          {recipients.map((recipient) => (
+            <div key={recipient.id} className="mb-2 last:mb-0">
+              <p className="font-bold text-slate-800">{recipient.name || 'Nama Penerima'}</p>
+              {recipient.email && <p className="text-slate-600">{recipient.email}</p>}
+            </div>
+          ))}
         </div>
         <div className="text-right space-y-1">
           <div className="grid grid-cols-2 gap-2">
@@ -92,11 +106,8 @@ const InvoicePreview = ({ logo, qris, tanggal, jatuhTempo, items, subtotal }) =>
               </div>
             )}
           </div>
-          <div className="text-xs text-slate-600 space-y-1">
-            <p>Pembayaran bisa melalui :</p>
-            <p>BRI 058001038511504</p>
-            <p>a.n AIDHA MUKHLISHAH IBRAHIM</p>
-            <p>atau melalui QRIS DC XVI</p>
+          <div className="text-xs text-slate-600 whitespace-pre-line leading-relaxed">
+            {paymentInstructions}
           </div>
         </div>
 
@@ -121,14 +132,8 @@ const InvoicePreview = ({ logo, qris, tanggal, jatuhTempo, items, subtotal }) =>
 
       {/* Closing Text */}
       <div className="mt-12 pt-12 border-t border-slate-100">
-        <div className="text-sm text-slate-600 space-y-2">
-          <p>Terima kasih telah membeli alat di Danus DC XVI</p>
-          <p>Pembayaran dapat dilakukan melalui transfer bank berikut.</p>
-          <p>BRI 058001035894505</p>
-          <p>a.n ATSILAH MATTA IBRAHIM</p>
-          <p>atau melalui WRIS DC XVI.</p>
-          <p>Apabila sudah membayar, harap untuk konfirmasi ke</p>
-          <p>Zahra Salsabila (2022)</p>
+        <div className="text-sm text-slate-600 whitespace-pre-line leading-relaxed">
+          {closingNotes}
         </div>
       </div>
       
