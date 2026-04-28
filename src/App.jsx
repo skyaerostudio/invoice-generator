@@ -21,17 +21,16 @@ const App = () => {
   const [items, setItems] = useState([
     { id: 1, name: '', quantity: 1, cost: 0 }
   ]);
-  const [paymentInstructions, setPaymentInstructions] = useState(`Pembayaran bisa melalui :
-BRI 058001038511504
-a.n AIDHA MUKHLISHAH IBRAHIM
-atau melalui QRIS DC XVII`);
+  const [paymentInstructions, setPaymentInstructions] = useState(`Pembayaran dapat dilakukan melalui transfer bank berikut.
+
+Bank Mandiri
+RAISSA SADIRA MUMTAZ
+1420023561813
+atau melalui QRIS DC XVII.`);
   const [closingNotes, setClosingNotes] = useState(`Terima kasih telah membeli alat di Danus DC XVII
-Pembayaran dapat dilakukan melalui transfer bank berikut.
-BRI 058001035894505
-a.n ATSILAH MATTA IBRAHIM
-atau melalui WRIS DC XVII.
+
 Apabila sudah membayar, harap untuk konfirmasi ke
-Zahra Salsabila (2022)`);
+Maritza Fanny (2023)`);
 
   const subtotal = items.reduce((acc, item) => acc + (item.quantity * item.cost), 0);
 
@@ -101,19 +100,23 @@ Zahra Salsabila (2022)`);
 
     setIsGenerating(true);
     try {
+      const downloadScale = 3;
       const canvas = await html2canvas(invoice, {
-        scale: 2,
+        scale: downloadScale,
         useCORS: true,
-        logging: false
+        logging: false,
+        imageTimeout: 0,
+        removeContainer: true,
       });
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'px',
-        format: [canvas.width / 2, canvas.height / 2]
+        format: [canvas.width / downloadScale, canvas.height / downloadScale],
+        compress: true,
       });
       
-      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / downloadScale, canvas.height / downloadScale, undefined, 'FAST');
       pdf.save(`invoice-${format(new Date(), 'yyyyMMdd')}.pdf`);
     } catch (error) {
       console.error('Error generating PDF:', error);
