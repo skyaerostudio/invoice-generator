@@ -1,11 +1,18 @@
 import { useState } from 'react';
-import { Plus, Trash2, Printer, Upload, X } from 'lucide-react';
+import { Plus, Trash2, Printer, Upload, X, Mail, Download } from 'lucide-react';
 import { format } from 'date-fns';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import InvoicePreview from './components/InvoicePreview';
+import EmailModal from './components/EmailModal';
 
 const App = () => {
   const [logo, setLogo] = useState(null);
   const [qris, setQris] = useState(null);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isEmailSending, setIsEmailSending] = useState(false);
+  const [isEmailSent, setIsEmailSent] = useState(false);
   const [tanggal, setTanggal] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [jatuhTempo, setJatuhTempo] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [recipients, setRecipients] = useState([
@@ -88,16 +95,127 @@ Zahra Salsabila (2022)`);
     window.print();
   };
 
+  const handleDownloadPDF = async () => {
+    const invoice = document.getElementById('invoice-preview');
+    if (!invoice) return;
+
+    setIsGenerating(true);
+    try {
+      const canvas = await html2canvas(invoice, {
+        scale: 2,
+        useCORS: true,
+        logging: false
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'px',
+        format: [canvas.width / 2, canvas.height / 2]
+      });
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
+      pdf.save(`invoice-${format(new Date(), 'yyyyMMdd')}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleConfirmSendEmail = async () => {
+    const invoice = document.getElementById('invoice-preview');
+    if (!invoice) return;
+
+    setIsEmailSending(true);
+    try {
+      // 1. Generate PDF as Base64
+      const canvas = await html2canvas(invoice, {
+        scale: 2,
+        useCORS: true,
+        logging: false
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'px',
+        format: [canvas.width / 2, canvas.height / 2]
+      });
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
+      const pdfBase64 = pdf.output('datauristring').split(',')[1];
+
+      // 2. Prepare Email Data
+      const recipientEmails = recipients.map(r => r.email).filter(e => e).join(',');
+      const subject = `Invoice from DC XVII - ${format(new Date(), 'dd MMM yyyy')}`;
+      const body = `Halo,
+
+Invoice Anda sebesar Rp${subtotal.toLocaleString('id-ID')} sudah siap.
+Silakan lihat lampiran PDF pada email ini untuk detail lengkapnya.
+
+Terima kasih,
+DC XVII`;
+
+      // 3. Send to Netlify Function
+      const response = await fetch('/.netlify/functions/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: recipientEmails,
+          subject,
+          body,
+          pdfBase64,
+          fileName: `invoice-${format(new Date(), 'yyyyMMdd')}.pdf`
+        })
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setIsEmailSent(true);
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      console.error('Error sending email:', error);
+      alert(`Failed to send email: ${error.message}`);
+    } finally {
+      setIsEmailSending(false);
+    }
+  };
+
+  const closeEmailModal = () => {
+    setIsEmailModalOpen(false);
+    // Reset state after a short delay to allow closing animation
+    setTimeout(() => {
+      setIsEmailSent(false);
+      setIsEmailSending(false);
+    }, 300);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
       {/* Sidebar / Editor */}
       <div className="w-full md:w-[450px] bg-white border-r border-slate-200 p-6 overflow-y-auto no-print h-screen sticky top-0">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-bold text-slate-800">Invoice Editor</h1>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <button 
+              onClick={() => setIsEmailModalOpen(true)}
+              className="p-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900 transition-colors shadow-sm flex items-center gap-2 px-4"
+            >
+              <Mail size={18} />
+              <span>Send</span>
+            </button>
+            <button 
+              onClick={handleDownloadPDF}
+              disabled={isGenerating}
+              className="p-2 bg-blue-50 text-blue-600 border border-blue-100 rounded-lg hover:bg-blue-100 transition-colors shadow-sm flex items-center gap-2 px-4 disabled:opacity-50"
+            >
+              <Download size={18} />
+              <span>{isGenerating ? '...' : 'PDF'}</span>
+            </button>
             <button 
               onClick={handlePrint}
-              className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm flex items-center gap-2 px-4"
+              className="p-2 bg-white text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-sm flex items-center gap-2 px-4"
             >
               <Printer size={18} />
               <span>Print</span>
@@ -319,6 +437,17 @@ Zahra Salsabila (2022)`);
           closingNotes={closingNotes}
         />
       </div>
+
+      <EmailModal 
+        isOpen={isEmailModalOpen}
+        onClose={closeEmailModal}
+        recipients={recipients}
+        total={subtotal}
+        senderName="Danus DC XVII"
+        onSend={handleConfirmSendEmail}
+        isSending={isEmailSending}
+        isSent={isEmailSent}
+      />
     </div>
   );
 };

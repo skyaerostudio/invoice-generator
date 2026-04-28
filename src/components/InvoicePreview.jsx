@@ -29,7 +29,7 @@ const InvoicePreview = ({
   };
 
   return (
-    <div className="bg-white w-full max-w-[800px] min-h-[1123px] p-12 invoice-shadow flex flex-col print:max-w-none print:min-h-screen">
+    <div id="invoice-preview" className="bg-white w-full max-w-[800px] min-h-[1123px] p-12 invoice-shadow flex flex-col print:max-w-none print:min-h-screen">
       {/* Header */}
       <div className="flex justify-between items-start mb-12">
         <div className="w-48 h-24 flex items-start justify-start overflow-hidden">
