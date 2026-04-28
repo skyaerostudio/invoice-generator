@@ -168,11 +168,13 @@ DC XVII`;
         })
       });
 
-      const result = await response.json();
-      if (result.success) {
+      const result = await response.json().catch(() => null);
+      
+      if (response.ok && result?.success) {
         setIsEmailSent(true);
       } else {
-        throw new Error(result.error);
+        const errorMsg = result?.error || `Server Error (${response.status})`;
+        throw new Error(errorMsg);
       }
     } catch (error) {
       console.error('Error sending email:', error);

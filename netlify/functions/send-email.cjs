@@ -49,7 +49,12 @@ exports.handler = async (event, context) => {
     console.error('Nodemailer Error:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ success: false, error: error.message }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        success: false, 
+        error: error.message,
+        details: 'Check Netlify logs for more info'
+      }),
     };
   }
 };
