@@ -129,22 +129,29 @@ Zahra Salsabila (2022)`);
 
     setIsEmailSending(true);
     try {
-      // 1. Generate PDF as Base64
+      // 1. Generate PDF as Base64 (optimized for email: JPEG at 1.5x scale)
+      const emailScale = 1.5;
       const canvas = await html2canvas(invoice, {
-        scale: 2,
+        scale: emailScale,
         useCORS: true,
         logging: false
       });
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/jpeg', 0.85);
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'px',
-        format: [canvas.width / 2, canvas.height / 2]
+        format: [canvas.width / emailScale, canvas.height / emailScale]
       });
-      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
+      pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width / emailScale, canvas.height / emailScale);
       const pdfBase64 = pdf.output('datauristring').split(',')[1];
 
-      // 2. Prepare Email Data
+      // 2. Check payload size (Netlify limit: 6MB, ~4.5MB effective for base64)
+      const payloadSizeKB = Math.round((pdfBase64.length * 3) / 4 / 1024);
+      if (payloadSizeKB > 5000) {
+        throw new Error(`PDF too large (${Math.round(payloadSizeKB / 1024)}MB). Try removing high-resolution images.`);
+      }
+
+      // 3. Prepare Email Data
       const recipientEmails = recipients.map(r => r.email).filter(e => e).join(',');
       const subject = `Invoice from DC XVII - ${format(new Date(), 'dd MMM yyyy')}`;
       const body = `Halo,
@@ -155,7 +162,7 @@ Silakan lihat lampiran PDF pada email ini untuk detail lengkapnya.
 Terima kasih,
 DC XVII`;
 
-      // 3. Send to Netlify Function
+      // 4. Send to Netlify Function
       const response = await fetch('/.netlify/functions/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -169,7 +176,14 @@ DC XVII`;
       });
 
       const result = await response.json().catch(() => null);
-      
+
+      // Log debug trail from server for troubleshooting
+      if (result?.debug) {
+        console.group('📧 Email Debug Trail');
+        result.debug.forEach(d => console.log(d));
+        console.groupEnd();
+      }
+
       if (response.ok && result?.success) {
         setIsEmailSent(true);
       } else {
