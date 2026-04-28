@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Plus, Trash2, Printer, Upload, X, Mail, Download } from 'lucide-react';
-import { format } from 'date-fns';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import { format, parseISO } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
 import InvoicePreview from './components/InvoicePreview';
 import EmailModal from './components/EmailModal';
+import { generateInvoicePDF } from './utils/generatePDF';
 
 const App = () => {
   const [logo, setLogo] = useState(null);
@@ -94,29 +94,41 @@ Maritza Fanny (2023)`);
     window.print();
   };
 
-  const handleDownloadPDF = async () => {
-    const invoice = document.getElementById('invoice-preview');
-    if (!invoice) return;
+  // Shared formatting helpers (also used by InvoicePreview)
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+    }).format(amount).replace('IDR', 'Rp');
+  };
 
+  const formatDate = (dateStr) => {
+    try {
+      return format(parseISO(dateStr), 'd MMM yyyy', { locale: idLocale });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const getPDFParams = () => ({
+    logo,
+    qris,
+    tanggal,
+    jatuhTempo,
+    recipients,
+    items,
+    subtotal,
+    paymentInstructions,
+    closingNotes,
+    formatDate,
+    formatCurrency,
+  });
+
+  const handleDownloadPDF = async () => {
     setIsGenerating(true);
     try {
-      const downloadScale = 3;
-      const canvas = await html2canvas(invoice, {
-        scale: downloadScale,
-        useCORS: true,
-        logging: false,
-        imageTimeout: 0,
-        removeContainer: true,
-      });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'px',
-        format: [canvas.width / downloadScale, canvas.height / downloadScale],
-        compress: true,
-      });
-      
-      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / downloadScale, canvas.height / downloadScale, undefined, 'FAST');
+      const pdf = await generateInvoicePDF(getPDFParams());
       pdf.save(`invoice-${format(new Date(), 'yyyyMMdd')}.pdf`);
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -127,25 +139,11 @@ Maritza Fanny (2023)`);
   };
 
   const handleConfirmSendEmail = async () => {
-    const invoice = document.getElementById('invoice-preview');
-    if (!invoice) return;
 
     setIsEmailSending(true);
     try {
-      // 1. Generate PDF as Base64 (optimized for email: JPEG at 1.5x scale)
-      const emailScale = 1.5;
-      const canvas = await html2canvas(invoice, {
-        scale: emailScale,
-        useCORS: true,
-        logging: false
-      });
-      const imgData = canvas.toDataURL('image/jpeg', 0.85);
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'px',
-        format: [canvas.width / emailScale, canvas.height / emailScale]
-      });
-      pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width / emailScale, canvas.height / emailScale);
+      // 1. Generate PDF using native vector renderer
+      const pdf = await generateInvoicePDF(getPDFParams());
       const pdfBase64 = pdf.output('datauristring').split(',')[1];
 
       // 2. Check payload size (Netlify limit: 6MB, ~4.5MB effective for base64)
