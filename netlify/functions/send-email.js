@@ -1,25 +1,16 @@
-const nodemailer = require('nodemailer');
+import nodemailer from 'nodemailer';
 
-exports.handler = async (event, context) => {
+export const handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
   try {
-    // Handle potential base64 encoding from Netlify
     const body = event.isBase64Encoded 
       ? Buffer.from(event.body, 'base64').toString() 
       : event.body;
     
     const { to, subject, body: textBody, pdfBase64, fileName } = JSON.parse(body);
-
-    if (!to || !pdfBase64) {
-      return { 
-        statusCode: 400, 
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ success: false, error: 'Missing recipient or PDF data' }) 
-      };
-    }
 
     const transporter = nodemailer.createTransport({
       service: 'gmail',
