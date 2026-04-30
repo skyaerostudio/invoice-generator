@@ -80,7 +80,7 @@ export async function generateInvoicePDF({
 
   setFont('normal', 10);
   setColor(slate600);
-  pdf.text('dentistrycharityvxi@gmail.com', rightX, y + 50, { align: 'right' });
+  pdf.text('dentistrycharityvxii@gmail.com', rightX, y + 50, { align: 'right' });
 
   y += 80;
 
@@ -114,7 +114,7 @@ export async function generateInvoicePDF({
 
   // Right: Dates
   const dateRightX = pageWidth - margin - 20;
-  const dateLabelX = dateRightX - 100;
+  const dateLabelX = dateRightX - 140;
 
   setFont('bold', 10);
   setColor(slate800);

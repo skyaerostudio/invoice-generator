@@ -155,7 +155,20 @@ Maritza Fanny (2023)`);
       // 3. Prepare Email Data
       const recipientEmails = recipients.map(r => r.email).filter(e => e).join(',');
       const subject = `Invoice from DC XVII - ${format(new Date(), 'dd MMM yyyy')}`;
-      const body = `Halo,
+
+      const validRecipients = recipients.filter(r => r.name);
+      let recipientNamesText = "";
+      if (validRecipients.length === 1) {
+        recipientNamesText = validRecipients[0].name;
+      } else if (validRecipients.length > 1) {
+        const names = validRecipients.map(r => r.name);
+        const last = names.pop();
+        recipientNamesText = names.join(', ') + ' dan ' + last;
+      }
+
+      const greeting = recipientNamesText ? `Halo ${recipientNamesText},` : 'Halo,';
+
+      const body = `${greeting}
 
 Invoice Anda sebesar Rp${subtotal.toLocaleString('id-ID')} sudah siap.
 Silakan lihat lampiran PDF pada email ini untuk detail lengkapnya.
